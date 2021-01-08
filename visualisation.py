@@ -35,11 +35,12 @@ agree = st.checkbox("Show data")
 if agree:
     st.table(data)
 
-
+st.set_option('deprecation.showPyplotGlobalUse', False)
 st.markdown("Anzahl Impfungen im Vergleich zu Anzahl Personen")
 pal = sns.color_palette("BuGn")
 mio = ["0 Mio.", "1 Mio.", "2 Mio.", "3 Mio.", "4 Mio.", "5 Mio.", "6 Mio.", "7 Mio."]
 ax = data.plot(kind='barh', stacked=True, color= pal)
 ax.set_xticklabels(mio)
 st.pyplot()
+
 
