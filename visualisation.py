@@ -10,9 +10,6 @@ from dataclasses import dataclass
 
 st.title("Vaccination covid 19 counter for switzerland") 
 
-import datetime
-today = st.date_input("Today is", datetime.datetime.now())
-
 st.sidebar.title("Lookup your Kanton")
 st.sidebar.markdown('Interact with the data here')
 option = st.sidebar.selectbox(
@@ -30,6 +27,13 @@ def read_data():
     return data
 
 data = read_data()
+
+import datetime
+today = st.date_input("Today is", datetime.datetime.now())
+
+agree = st.checkbox("Show data")
+if agree:
+    st.table(data)
 
 
 st.markdown("Anzahl Impfungen im Vergleich zu Anzahl Personen")
