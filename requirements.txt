@@ -1,7 +1,7 @@
 pandas==1.1.2
-matplotlib
+matplotlib==3.3.2
 numpy==1.18.5
 streamlit==0.62.0
-seaborn
+seaborn==0.11.0
 datetime
-altair
+altair==4.1.0
