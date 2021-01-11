@@ -3,27 +3,51 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
-import seaborn as sns
 import altair as alt
 from dataclasses import dataclass
+import geopandas as gpd
 
-st.title("Vaccination covid 19 counter for switzerland") 
+st.title("COVID-19 Vaccine Dashboard") 
+st.write("| A dashboard for the ongoing process of vaccinations in Switzerland")
+st.write("The world is in the midst of a COVID-19 pandemic. Vaccines save millions of lives each year. Vaccines work by training and preparing the body’s natural defences, the immune system, to recognize and fight off the viruses and bacteria they target. There are currently more than 50 COVID-19 vaccine candidates in trials. This dashboard is an approach to visualise the vaccination progress in Switzerland.")
+import datetime
+today = st.date_input("Today is", datetime.datetime.now())
 
-#st.sidebar.title("Lookup your Kanton")
-#st.sidebar.markdown('Interact with the data here')
 
+st.sidebar.title("Visualization Selector")
+st.sidebar.write("Select accordingly:")
 
 @st.cache
 def read_data():
     impf = pd.read_excel("impfkategorien.xlsx", skiprows=2)
     return impf
-
+@st.cache
 def read_dummy():
     df = pd.read_excel("dummy_data.xlsx")
     return df
 
+@st.cache
+def info_dummy():
+    df = pd.read_excel("mapdata_dummy.xlsx")
+    return df
+
+@st.cache
+def map_dummy():
+    df = gpd.read_file('data/CHE_adm1.shp')
+    return df
+
+
+
+#Read Data
 data_ = read_data()
 
+#Show data
+agree = st.checkbox("Show data")
+if agree:
+    st.subheader("Vaccination Data")
+    st.write(data_)
+
+#Prepare Data
 impf_ = data_.groupby("Priorität").sum()
 d1 =impf_[["Grösse der Zielgruppe schweizweit laut BAG-Schätzung"]]
 d1 = d1.rename(columns={"Priorität": "Priority","Grösse der Zielgruppe schweizweit laut BAG-Schätzung":"Vaccinations"}).reset_index()
@@ -31,56 +55,52 @@ d1["Site"] = list(np.repeat("Anzahl Personen", 5))
 d1 = d1.rename(columns={"Priorität": "Priority"})
 d2 = pd.DataFrame({'Priority': ["P1","P2","P3","P4","Sonstige"], 'Vaccinations': [0,0,0,0,1000000], "Site" : list(np.repeat("Anzahl Impfungen", 5))})
 df3 = pd.concat([d1, d2])
-#impf_plt = pd.DataFrame(impf_["Grösse der Zielgruppe schweizweit laut BAG-Schätzung"]).transpose()
-#impf_plt["AnzahlImpfungen"] = 0
-#impf_plt = pd.DataFrame(np.array([[0,0,0,0,0,1000000]]), columns=['P1', 'P2', 'P3', 'P4', 'Sonstige', 'AnzahlImpfungen']).append(impf_plt, ignore_index=True)
-#data = impf_plt.rename(index={0: "Anzahl Impfungen",1: "Anzahl Personen"})
 
-import datetime
-today = st.date_input("Today is", datetime.datetime.now())
-
-agree = st.checkbox("Show data")
-if agree:
-    st.subheader("Vaccination Data")
-    st.write(data_)
-    #st.table(data)
-
-#st.set_option('deprecation.showPyplotGlobalUse', False)
-#st.markdown("Anzahl Impfungen im Vergleich zu Anzahl Personen")
-#pal = sns.color_palette("BuGn")
-#mio = ["0 Mio.", "1 Mio.", "2 Mio.", "3 Mio.", "4 Mio.", "5 Mio.", "6 Mio.", "7 Mio."]
-#ax = data.plot(kind='barh', stacked=True, color= pal)
-#ax.set_xticklabels(mio)
-#st.pyplot()
-
-st.markdown("Anzahl Impfungen im Vergleich zu Anzahl Personen")
-stack = alt.Chart(df3).mark_bar().encode(
-    x='sum(Vaccinations):Q',
-    y='Site:N',
-    color='Priority'
-).properties(width=800, height=500)
+#Stack barplot
+st.header("Current state of amount of vaccinations and priority groups")
+stack = alt.Chart(df3).mark_bar(size = 70).encode(
+    alt.X('sum(Vaccinations):Q', axis=alt.Axis(title="")),
+    alt.Y('Site:N', axis=alt.Axis(title="")),
+    color=alt.Color('Priority', scale=alt.Scale(scheme='pastel1'),legend=alt.Legend(title="Priority Groups"))
+).properties(
+    width=800,
+    height=500).configure_axis(
+    labelFontSize=17,
+    titleFontSize=20)
 st.altair_chart(stack)
 
+st.subheader("Select the box to see the criteria for the priority groups")
+agree = st.checkbox("Show Description")
+if agree:
+    option = st.selectbox(
+        "Description of the Priority Groups",
+        ['P1', 'P2', 'P3', 'P4', 'Sonstige'])
 
-option = st.selectbox(
-    "Description of the Priority Groups",
-     ['P1', 'P2', 'P3', 'P4', 'Sonstige'])
+    if option == "P1":
+        st.table(data_["Beschreibung"].loc[data_['Priorität'] == "P1"])
+    if option == "P2":
+        st.table(data_["Beschreibung"].loc[data_['Priorität'] == "P2"])
+    if option == "P3":
+        st.table(data_["Beschreibung"].loc[data_['Priorität'] == "P3"])
+    if option == "P4":
+        st.table(data_["Beschreibung"].loc[data_['Priorität'] == "P4"])
+    if option == "Sonstige":
+        st.table(data_["Beschreibung"].loc[data_['Priorität'] == "Sonstige"])
 
-if option == "P1":
-    st.table(data_["Beschreibung"].loc[data_['Priorität'] == "P1"])
-if option == "P2":
-    st.table(data_["Beschreibung"].loc[data_['Priorität'] == "P2"])
-if option == "P3":
-    st.table(data_["Beschreibung"].loc[data_['Priorität'] == "P3"])
-if option == "P4":
-    st.table(data_["Beschreibung"].loc[data_['Priorität'] == "P4"])
-if option == "Sonstige":
-    st.table(data_["Beschreibung"].loc[data_['Priorität'] == "Sonstige"])
+## Barchart
+st.header('Distribution in percentage of the different Vaccination groups')
+df1 = impf_.reset_index()
+df1['Schwitzerland'] = df1["Bern"]/df1["Bern"].sum()
+bars = alt.Chart(df1).mark_bar(size = 80).encode(
+    x='Priorität',
+    y='Schwitzerland').configure_mark(
+    color='#ffbb78').properties(
+    width=800,
+    height=500).configure_axis(
+    labelFontSize=17,
+    titleFontSize=20)
+st.altair_chart(bars)
 
-st.markdown('Distribution in percentage of the different Vaccination groups')
-df = impf_.drop(columns= ["Grösse der Zielgruppe schweizweit laut BAG-Schätzung"])
-df = df.rename(columns={"Zürich": "Switzerland"})
-st.bar_chart(df["Switzerland"]/df["Switzerland"].sum())
 
 df_dummy = read_dummy()
 manufacturer_input = st.multiselect(
@@ -95,13 +115,26 @@ shipping_volume = alt.Chart(df_dummy).transform_filter(
     color='manufacturer',
     tooltip = 'sum(shipping_volume_cumulated)',
 ).properties(
-    width=1500,
+    width=800,
     height=600
 ).configure_axis(
     labelFontSize=17,
     titleFontSize=20
-).properties(width=800, height=600)
+)
 
-st.subheader('Comulated Shipping Value Over Time')
+#Time Chart
+st.header('Comulated Shipping Value Over Time')
 st.altair_chart(shipping_volume)
 
+#Switzerland Map
+map_df = map_dummy()
+info_dummy = info_dummy()
+
+merge=pd.merge(map_df,info_dummy,on='NAME_1')
+
+st.header('Distribution of P1 in the Kantons')
+st.set_option('deprecation.showPyplotGlobalUse', False)
+swiss_map = merge.plot(column='P1', scheme="quantiles",
+           figsize=(25, 20),
+           legend=True,cmap='coolwarm')
+st.pyplot()
