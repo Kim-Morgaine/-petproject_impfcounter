@@ -7,3 +7,4 @@ datetime
 altair==4.1.0
 openpyxl == 3.0.5
 mapclassify == 2.2.0
+geopandas == 0.8.1
